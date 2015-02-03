@@ -6,7 +6,7 @@ class SSH
   attr_accessor :config, :argv, :options, :opt_parse
 
   def initialize(argv)
-    @config = YAML.load(File.open("#{File.expand_path('.')}/conf/ssh_config.yml"))['config']
+    @config = YAML.load(File.open("#{File.dirname(__FILE__)}/../conf/ssh_config.yml"))['config']
     @argv = argv
     @options = set_default_options(@config, @argv)
 

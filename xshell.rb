@@ -3,7 +3,7 @@
 require 'rubygems'
 require 'optparse'
 
-Dir["commands/**/*.rb"].each {|file| require_relative file }
+Dir["#{File.dirname(__FILE__)}/commands/**/*.rb"].each {|file| require_relative file }
 
 
 options = {}
