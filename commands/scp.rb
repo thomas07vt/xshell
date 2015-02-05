@@ -1,12 +1,12 @@
 require 'yaml'
 require 'net/ssh'
 
-class SSH
+class SCP
 
   attr_accessor :config, :argv, :options, :opt_parse
 
   def initialize(argv)
-    @config = YAML.load(File.open("#{File.dirname(__FILE__)}/../conf/ssh_config.yml"))['config']
+    @config = YAML.load(File.open("#{File.dirname(__FILE__)}/../conf/scp_config.yml"))['config']
     @argv = argv
     @options = set_default_options(@config, @argv)
 
@@ -85,7 +85,6 @@ class SSH
       options[:ip] = target_server["ip"]
       options[:cert] = target_server["cert"]
       options[:key] = target_server["cert_key"]
-      options[:user] = target_server["user"]
 
     rescue StandardError => e
       puts "#{e.message}"
@@ -98,75 +97,19 @@ class SSH
   def ssh_connect(options)
     raise "No Server found in arguments or config file." unless options[:ip]
     puts "Connecting to #{options[:ip]}....\n\n"
-    cert = File.read("#{options[:cert_dir]}#{options[:cert]}")
-
-    # system("ssh -i '#{options[:cert_dir]}#{options[:cert]}' '#{options[:user]}@#{options[:ip]}' ")
-
-    # Net::SSH.start(options[:ip], options[:user], { key_data: cert, keys_only: true, timeout: 10 } ) do |ssh|
-    #   ssh.open_channel do |channel|
-    #     channel.request_pty do |ch, success|
-    #       if success
-    #         puts "========================= CONNECTED TO #{options[:ip]} ==================================="
-    #       else
-    #         puts "=========================  CONNECTION TO #{options[:ip]} FAILED  ===================================="
-    #         return
-    #       end
-    #     end
-    #   end
-    #   ssh.loop
-    # end
-
-
-    Net::SSH.start(options[:ip], options[:user], { key_data: cert, keys_only: true, timeout: 10 } ) do |session|
-
-      session.open_channel do |channel|
-
-        # io = TCPSocket.new(somewhere, port)
-        # io.extend(Net::SSH::BufferedIo)
-        # ssh.listen_to(io)
-
-        channel.on_open_failed do
-          puts "shell could not be started!"
-        end
-        channel.on_data do |ch,data|
-          print "#{data}"
-          command = gets
-        end
-        channel.on_close do
-          puts "shell terminated"
-        end
-
+    Net::SSH.start(options[:ip], options[:user], { key_data: "#{options[:cert_dir]}#{options[:key]}", keys_only: true, timeout: 10 } ) do |ssh|
+      ssh.open_channel do |channel|
         channel.request_pty do |ch, success|
           if success
-            puts "pty successfully obtained"
+            puts "========================= CONNECTED TO #{options[:ip]} ==================================="
           else
-            puts "could not obtain pty"
+            puts "=========================  CONNECTION TO #{options[:ip]} FAILED  ===================================="
+            return
           end
         end
-
-        # channel.on_process do
-        #   if io.available > 0
-        #     channel.send_data(io.read_available)
-        #   end
-        # end
-
-        channel.send_channel_request "shell" do |ch, success|
-          if success
-            puts "user shell started successfully"
-          else
-            puts "could not start user shell"
-          end
-        end
-
       end
-
-      puts "loop"
-      puts $stdin.read
-      
-      session.loop
-
+      ssh.loop
     end
-
   end
 
 end
